@@ -7,6 +7,8 @@
 
 // Define constants
 #define BLE_UUID "19B10000-E8F2-537E-4F6C-D104768A1214"
+#define SPEED_UUID "19B10000-E8F2-537E-4F6C-D104776A1219"
+#define DIR_UUID "19B10000-E8F2-537E-4F6C-D604168C1217"
 #define POT_PIN A0
 
 int potValue = 0; // variable to store the value read
@@ -20,6 +22,7 @@ void controlLed(BLEDevice peripheral);
 void setup()
 {
   Serial.begin(9600);
+  // while (!Serial);
 
   // initialize the BLE hardware
   BLE.begin();
@@ -89,8 +92,10 @@ void controlLed(BLEDevice peripheral)
     return;
   }
 
-  // retrieve the LED characteristic
-  BLECharacteristic speedCharacteristic = peripheral.characteristic(BLE_UUID);
+  // retrieve the speed characteristic
+  BLECharacteristic speedCharacteristic = peripheral.characteristic(SPEED_UUID);
+  // retrieve the direction characteristic
+  BLECharacteristic forwardDirectionCharacteristic = peripheral.characteristic(DIR_UUID);
 
   if (!speedCharacteristic)
   {
@@ -104,21 +109,29 @@ void controlLed(BLEDevice peripheral)
     peripheral.disconnect();
     return;
   }
+  if (!forwardDirectionCharacteristic)
+  {
+    Serial.println("Peripheral does not have skateboard direction characteristic!");
+    peripheral.disconnect();
+    return;
+  }
+  else if (!forwardDirectionCharacteristic.canWrite())
+  {
+    Serial.println("Peripheral does not have a writable skateboard direction characteristic!");
+    peripheral.disconnect();
+    return;
+  }
   int oldPot = 0;
+  int newSpeed = 0;
+  bool forward = true;
   while (peripheral.connected())
   {
     // while the peripheral is connected
 
     // read the pot pin
     potValue = analogRead(POT_PIN);
-    int newSpeed = float(potValue / 1023.0) * 100;
+    newSpeed = float(potValue / 1023.0) * 100;
     newSpeed = (newSpeed - 50) * 2;
-
-    // if (newSpeed >= 55) {
-    //   newSpeed = (newSpeed - 50) * 2;
-    // } else if (newSpeed <= 45) {
-    //   newSpeed = (newSpeed - 50) * 2;
-    // }
 
     if (potValue > (oldPot + 20) || potValue < (oldPot - 20)) {
       oldPot = potValue;
@@ -130,33 +143,19 @@ void controlLed(BLEDevice peripheral)
     
     if (newSpeed != oldSpeed)
     {
-      // button changed
       oldSpeed = newSpeed;
-      int success = speedCharacteristic.writeValue((int8_t)newSpeed);
+      if (newSpeed < 0)
+        forward = false;
+      else
+        forward = true;
 
-      if (!success) {
-        Serial.println("Error: Pot Value Not Written");
+
+      int speedSuccess = speedCharacteristic.writeValue((int8_t)abs(newSpeed));
+      int dirSuccess = forwardDirectionCharacteristic.writeValue((int8_t)forward);
+
+      if (!speedSuccess || !dirSuccess) {
+        Serial.println("Error: Value Write Failure!");
       }
-      // if (success) {
-      //   Serial.println("Pot Value Written");
-      // } else {
-      //   Serial.println("Error: Pot Value Not Written");
-      // }
-
-      // if (buttonState)
-      // {
-      //   Serial.println("button pressed");
-
-      //   // button is pressed, write 0x01 to turn the LED on
-      // speedCharacteristic.writeValue((byte)0x01);
-      // }
-      // else
-      // {
-      //   Serial.println("button released");
-
-      //   // button is released, write 0x00 to turn the LED off
-      //   ledCharacteristic.writeValue((byte)0x00);
-      // }
     }
   }
 
