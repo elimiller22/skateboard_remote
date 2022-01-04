@@ -1,4 +1,3 @@
-// #include <Arduino.h>
 #include <ArduinoBLE.h>
 
 // Define constants
@@ -15,10 +14,13 @@ bool getCharacteristics(BLEDevice peripheral,
                         BLECharacteristic &speedCharacteristic,
                         BLECharacteristic &forwardDirectionCharacteristic);
 
+/**
+ * @brief Function to run setup on arduino.
+ *
+ */
 void setup() {
   Serial.begin(9600);
-  while (!Serial)
-    ;
+  // while (!Serial);
 
   // initialize the BLE hardware
   BLE.begin();
@@ -29,6 +31,10 @@ void setup() {
   BLE.scanForUuid(BLE_UUID);
 }
 
+/**
+ * @brief Loop function on Arduino
+ *
+ */
 void loop() {
   // check if a peripheral has been discovered
   BLEDevice peripheral = BLE.available();
@@ -71,6 +77,15 @@ void loop() {
   }
 }
 
+/**
+ * @brief Function to retrieve and return the speed and direction
+ * characteristics.
+ *
+ * @param peripheral - The ble peripheral object
+ * @param speedCharacteristic - Var for speed characteristic.
+ * @param forwardDirectionCharacteristic - Var for direction characteristic.
+ * @return bool - A flag for if the function completed successfully.
+ */
 bool getCharacteristics(BLEDevice peripheral,
                         BLECharacteristic &speedCharacteristic,
                         BLECharacteristic &forwardDirectionCharacteristic) {
@@ -110,6 +125,13 @@ bool getCharacteristics(BLEDevice peripheral,
   return true;
 }
 
+/**
+ * @brief Function to control the skateboard via ble.
+ *
+ * @param peripheral - The ble peripheral object
+ * @param speedCharacteristic - Speed characteristic object.
+ * @param forwardDirectionCharacteristic - Direction characteristic object.
+ */
 void controlSkateboard(BLEDevice peripheral,
                        BLECharacteristic speedCharacteristic,
                        BLECharacteristic forwardDirectionCharacteristic) {
@@ -126,6 +148,7 @@ void controlSkateboard(BLEDevice peripheral,
     newSpeed = float(potValue / 1023.0) * 100;
     newSpeed = (newSpeed - 50) * 2;
 
+    // Tune the top and bottom end values
     if (newSpeed >= (100 - speedSensitivity))
       newSpeed = 100;
     else if (newSpeed <= speedSensitivity && newSpeed >= -speedSensitivity)
@@ -133,6 +156,8 @@ void controlSkateboard(BLEDevice peripheral,
     else if (newSpeed <= -(100 - speedSensitivity))
       newSpeed = -100;
 
+    // If the speed has changed more than the specified sensitivity, then write
+    // the new speed.
     if (newSpeed > (oldSpeed + speedSensitivity) ||
         newSpeed < (oldSpeed - speedSensitivity)) {
       Serial.print("Pot Value: ");
