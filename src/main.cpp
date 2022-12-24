@@ -6,6 +6,11 @@
 #define DIR_UUID "19B10000-E8F2-537E-4F6C-D604168C1217"
 #define POT_PIN A0
 
+#define MAX_FORWARD_POT 600
+#define MIN_REVERSE_POT 420
+#define MAX_0_POT 520
+#define MIN_0_POT 484
+
 // Function Prototypes
 void controlSkateboard(BLEDevice peripheral,
                        BLECharacteristic speedCharacteristic,
@@ -145,16 +150,20 @@ void controlSkateboard(BLEDevice peripheral,
 
     // read the pot pin
     potValue = analogRead(POT_PIN);
-    newSpeed = float(potValue / 1023.0) * 100;
-    newSpeed = (newSpeed - 50) * 2;
 
-    // Tune the top and bottom end values
-    if (newSpeed >= (100 - speedSensitivity))
-      newSpeed = 100;
-    else if (newSpeed <= speedSensitivity && newSpeed >= -speedSensitivity)
+    if (potValue > MAX_0_POT) { // Forward
+      newSpeed = float(potValue - MAX_0_POT) /
+                 float(MAX_FORWARD_POT - MAX_0_POT) * 100;
+      if (newSpeed > 100)
+        newSpeed = 100;
+    } else if (potValue < 484) { // Reverse
+      newSpeed = float(potValue - MIN_0_POT) /
+                 float(MIN_REVERSE_POT - MIN_0_POT) * -100;
+      if (newSpeed < -100)
+        newSpeed = -100;
+    } else {
       newSpeed = 0;
-    else if (newSpeed <= -(100 - speedSensitivity))
-      newSpeed = -100;
+    }
 
     // If the speed has changed more than the specified sensitivity, then write
     // the new speed.
