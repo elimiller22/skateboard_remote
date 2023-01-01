@@ -8,8 +8,8 @@
 
 #define MAX_FORWARD_POT 600
 #define MIN_REVERSE_POT 420
-#define MAX_0_POT 520
-#define MIN_0_POT 484
+#define MAX_0_POT 550
+#define MIN_0_POT 470
 
 // Function Prototypes
 void controlSkateboard(BLEDevice peripheral,
